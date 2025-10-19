@@ -1,0 +1,785 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Administrador - Gestión Documental{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header Ejecutivo -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-2 text-primary">
+                        <i class="fas fa-chart-line me-3"></i>
+                        Panel Ejecutivo
+                    </h1>
+                    <p class="text-muted mb-0">Gestión integral de documentos y supervisión por áreas</p>
+                </div>
+                <div class="text-end d-flex align-items-center gap-3">
+                    <!-- Notificaciones -->
+                    <div class="d-flex gap-2">
+                        {% if pending_tasks > 0 %}
+                        <div class="position-relative">
+                            <i class="fas fa-tasks text-warning" style="font-size: 1.5rem;" title="Tareas pendientes"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                {{ pending_tasks }}
+                            </span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if overdue_tasks > 0 %}
+                        <div class="position-relative">
+                            <i class="fas fa-exclamation-triangle text-danger" style="font-size: 1.5rem;" title="Tareas vencidas"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                {{ overdue_tasks }}
+                            </span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if unread_notifications > 0 %}
+                        <div class="position-relative">
+                            <i class="fas fa-bell text-primary" style="font-size: 1.5rem;" title="Notificaciones"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary">
+                                {{ unread_notifications }}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <span class="badge badge-primary fs-6 px-3 py-2">
+                        <i class="fas fa-user-shield me-2"></i>
+                        Administrador
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones Ejecutivas -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h4 class="mb-4 text-gray-700">
+                <i class="fas fa-rocket me-2 text-primary"></i>
+                Acciones Ejecutivas
+            </h4>
+            <div class="row g-3">
+                <div class="col-lg-3 col-md-6">
+                    <a href="{{ url_for('create_area') }}" class="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center p-4">
+                        <i class="fas fa-folder-plus mb-3 text-primary" style="font-size: 2rem;"></i>
+                        <span class="fw-semibold">Crear Área</span>
+                        <small class="text-muted mt-1">Nueva área de trabajo</small>
+                    </a>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <a href="{{ url_for('assign_task') }}" class="btn btn-outline-success w-100 h-100 d-flex flex-column align-items-center justify-content-center p-4">
+                        <i class="fas fa-tasks mb-3 text-success" style="font-size: 2rem;"></i>
+                        <span class="fw-semibold">Asignar Tarea</span>
+                        <small class="text-muted mt-1">Nueva asignación</small>
+                    </a>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <a href="{{ url_for('manage_users') }}" class="btn btn-outline-info w-100 h-100 d-flex flex-column align-items-center justify-content-center p-4">
+                        <i class="fas fa-users mb-3 text-info" style="font-size: 2rem;"></i>
+                        <span class="fw-semibold">Usuarios</span>
+                        <small class="text-muted mt-1">Gestión de usuarios</small>
+                    </a>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <button class="btn btn-outline-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center p-4" onclick="refreshDashboard()">
+                        <i class="fas fa-sync-alt mb-3 text-warning" style="font-size: 2rem;"></i>
+                        <span class="fw-semibold">Actualizar</span>
+                        <small class="text-muted mt-1">Refrescar datos</small>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas por Área -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h4 class="mb-4 text-gray-700">
+                <i class="fas fa-chart-pie me-2 text-primary"></i>
+                Estadísticas por Área
+            </h4>
+        </div>
+        {% for area, stats in area_stats.items() %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 stats-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="me-3 position-relative">
+                            {% if 'Sanidad' in area %}
+                                <i class="fas fa-seedling text-success" style="font-size: 2rem;"></i>
+                            {% elif 'Seguridad' in area %}
+                                <i class="fas fa-shield-alt text-warning" style="font-size: 2rem;"></i>
+                            {% elif 'Producción' in area %}
+                                <i class="fas fa-industry text-info" style="font-size: 2rem;"></i>
+                            {% elif 'Bodegas' in area %}
+                                <i class="fas fa-warehouse text-primary" style="font-size: 2rem;"></i>
+                            {% else %}
+                                <i class="fas fa-building text-secondary" style="font-size: 2rem;"></i>
+                            {% endif %}
+                            
+                            <!-- Indicador de tareas pendientes -->
+                            {% if pending_by_area.get(area, 0) > 0 %}
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning">
+                                {{ pending_by_area.get(area, 0) }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h5 class="mb-1 text-gray-800">{{ area }}</h5>
+                            <small class="text-muted">{{ stats.users }} usuario{{ 's' if stats.users != 1 else '' }}</small>
+                            {% if pending_by_area.get(area, 0) > 0 %}
+                            <br><small class="text-warning">
+                                <i class="fas fa-clock me-1"></i>{{ pending_by_area.get(area, 0) }} tarea{{ 's' if pending_by_area.get(area, 0) != 1 else '' }} pendiente{{ 's' if pending_by_area.get(area, 0) != 1 else '' }}
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row text-center mb-3">
+                        <div class="col-4">
+                            <div class="stats-number">{{ stats.total_tasks }}</div>
+                            <div class="stats-label">Total</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stats-number text-success">{{ stats.completed_tasks }}</div>
+                            <div class="stats-label">Completadas</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stats-number text-primary">{{ "%.0f"|format(stats.completion_rate) }}%</div>
+                            <div class="stats-label">Progreso</div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar bg-gradient-primary" role="progressbar" 
+                             style="width: {{ stats.completion_rate }}%"
+                             aria-valuenow="{{ stats.completion_rate }}" 
+                             aria-valuemin="0" aria-valuemax="100">
+                        </div>
+                    </div>
+                    
+                    <a href="{{ url_for('view_folder', area=area) }}" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-folder-open me-2"></i>Ver Área
+                            </a>
+                        </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Alertas y Notificaciones -->
+    {% if overdue_tasks > 0 or pending_tasks > 0 %}
+    <div class="row mb-5">
+        <div class="col-12">
+            <h4 class="mb-4 text-gray-700">
+                <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                Alertas Importantes
+            </h4>
+            
+            {% if overdue_tasks > 0 %}
+            <div class="alert alert-danger border-start border-danger border-3 d-flex align-items-center">
+                <i class="fas fa-exclamation-triangle me-3" style="font-size: 1.5rem;"></i>
+                <div>
+                    <h6 class="mb-1">¡Tareas Vencidas!</h6>
+                    <p class="mb-0">Hay {{ overdue_tasks }} tarea{{ 's' if overdue_tasks != 1 else '' }} que han superado su fecha límite y requieren atención inmediata.</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if pending_tasks > 0 %}
+            <div class="alert alert-warning border-start border-warning border-3 d-flex align-items-center">
+                <i class="fas fa-clock me-3" style="font-size: 1.5rem;"></i>
+                <div>
+                    <h6 class="mb-1">Tareas Pendientes</h6>
+                    <p class="mb-0">Hay {{ pending_tasks }} tarea{{ 's' if pending_tasks != 1 else '' }} pendientes de completar en el sistema.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Tasks -->
+    <div class="row">
+        <div class="col-12">
+            <div class="recent-tasks-card" data-aos="fade-up">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock me-2"></i>Tareas Recientes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_tasks %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Documento</th>
+                                        <th>Asignado a</th>
+                                        <th>Área</th>
+                                        <th>Estado</th>
+                                        <th>Fecha Límite</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for task in recent_tasks %}
+                                    <tr>
+                                        <td>
+                                            <div class="document-info">
+                                                <strong>{{ task.document.title }}</strong>
+                                                <small class="text-muted d-block">{{ task.document.description[:50] }}...</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="user-info">
+                                                <i class="fas fa-user me-1"></i>
+                                                {{ task.assigned_user.username }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ task.assigned_user.area }}</span>
+                                        </td>
+                                        <td>
+                                            {% if task.status == 'completed' %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check me-1"></i>Completado
+                                                </span>
+                                            {% elif task.status == 'in_progress' %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-clock me-1"></i>En Proceso
+                                                </span>
+                                            {% elif task.status == 'expired' %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>Expirado
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-pending me-1"></i>Pendiente
+                                                </span>
+                                            {% endif %}
+                                            {% if task.total_files_required > 1 %}
+                                                <br><small class="text-muted">{{ task.files_uploaded }}/{{ task.total_files_required }} archivos</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if task.due_date %}
+                                                <span class="{% if is_task_overdue(task.due_date, task.status) %}text-danger{% endif %}">
+                                                    {{ task.due_date.strftime('%d/%m/%Y') }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">Sin fecha límite</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <button class="btn btn-sm btn-outline-info" onclick="viewTaskDetails({{ task.id }})">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                {% if task.files_uploaded > 0 %}
+                                                <a href="{{ url_for('download_task_files', task_id=task.id) }}" class="btn btn-sm btn-outline-success" title="Descargar Todos los Archivos">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                                {% endif %}
+                                                {% if task.status != 'completed' %}
+                                                <button class="btn btn-sm btn-outline-warning" onclick="sendReminder({{ task.id }})">
+                                                    <i class="fas fa-bell"></i>
+                                                </button>
+                                                {% endif %}
+                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteTask({{ task.id }})" title="Eliminar Tarea">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No hay tareas recientes</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Area Details Modal -->
+<div class="modal fade" id="areaDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="areaDetailsModalTitle">Detalles del Área</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="areaDetailsModalBody">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.dashboard-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+}
+
+.dashboard-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin-bottom: 0;
+}
+
+.quick-actions {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.quick-action-btn {
+    height: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: white;
+}
+
+.quick-action-btn:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    color: white;
+}
+
+.area-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.area-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.area-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.area-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    margin-right: 1rem;
+}
+
+.area-card:nth-child(1) .area-icon { background: linear-gradient(135deg, #ff6b6b, #ee5a52); }
+.area-card:nth-child(2) .area-icon { background: linear-gradient(135deg, #4ecdc4, #44a08d); }
+.area-card:nth-child(3) .area-icon { background: linear-gradient(135deg, #45b7d1, #96c93d); }
+
+.area-name {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: #333 !important;
+}
+
+.area-users {
+    color: #555 !important;
+    font-size: 0.9rem;
+    margin-bottom: 0;
+}
+
+.area-stats {
+    margin-bottom: 1rem;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.stat-label {
+    color: #444 !important;
+}
+
+.stat-value {
+    font-weight: 600;
+    color: #333 !important;
+}
+
+.progress {
+    height: 8px;
+    border-radius: 4px;
+}
+
+.progress-bar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.recent-tasks-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px 15px 0 0;
+    padding: 1.5rem;
+    border-bottom: none;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+}
+
+.document-info strong {
+    color: #333;
+}
+
+.user-info {
+    color: #666;
+}
+
+.btn-group .btn {
+    border-radius: 6px;
+}
+
+.categories-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.category-item {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1rem;
+    border-left: 4px solid #667eea;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.category-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.category-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.category-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    margin-right: 1rem;
+}
+
+.category-name {
+    color: #333 !important;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.category-description {
+    color: #555 !important;
+    font-size: 0.9rem;
+    margin-bottom: 0;
+}
+</style>
+
+<script>
+function refreshDashboard() {
+    location.reload();
+}
+
+function viewAreaDetails(areaName) {
+    // Implementar vista de detalles del área
+    alert(`Vista de detalles para el área: ${areaName}`);
+}
+
+function viewTaskDetails(taskId) {
+    // Mostrar modal con detalles de la tarea
+    showTaskDetailsModal(taskId);
+}
+
+function sendReminder(taskId) {
+    // Implementar envío de recordatorio
+    if (confirm('¿Enviar recordatorio para esta tarea?')) {
+        alert(`Recordatorio enviado para la tarea: ${taskId}`);
+    }
+}
+
+function deleteTask(taskId) {
+    if (confirm('¿Estás seguro de que quieres eliminar esta tarea? Esta acción no se puede deshacer.')) {
+        // Crear formulario temporal para enviar DELETE request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/delete-task/${taskId}`;
+        
+        // Agregar token CSRF si es necesario
+        const csrfToken = document.querySelector('meta[name=csrf-token]');
+        if (csrfToken) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'csrf_token';
+            input.value = csrfToken.getAttribute('content');
+            form.appendChild(input);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Modal para detalles de tarea
+function showTaskDetailsModal(taskId) {
+    const modal = new bootstrap.Modal(document.getElementById('taskDetailsModal'));
+    modal.show();
+    
+    // Cargar detalles de la tarea
+    fetch(`/api/task/${taskId}/details`, {
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                document.getElementById('taskDetailsContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Error: ${data.error}
+                    </div>
+                `;
+                return;
+            }
+            
+            // Formatear tamaño de archivo
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            // Crear HTML para los detalles
+            const taskDetailsHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary mb-3">
+                            <i class="fas fa-info-circle me-2"></i>Información General
+                        </h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Título:</strong></td>
+                                <td>${data.title}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Descripción:</strong></td>
+                                <td>${data.description || 'Sin descripción'}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Estado:</strong></td>
+                                <td>
+                                    <span class="badge ${data.status === 'completed' ? 'bg-success' : 'bg-warning'}">
+                                        ${data.status.toUpperCase()}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Prioridad:</strong></td>
+                                <td>
+                                    <span class="badge ${data.priority === 'alta' ? 'bg-danger' : data.priority === 'media' ? 'bg-warning' : 'bg-success'}">
+                                        ${data.priority.toUpperCase()}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Fecha Límite:</strong></td>
+                                <td>${data.due_date || 'Sin fecha límite'}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Creada:</strong></td>
+                                <td>${data.created_at}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6 class="text-primary mb-3">
+                            <i class="fas fa-user me-2"></i>Usuario Asignado
+                        </h6>
+                        ${data.assigned_user ? `
+                            <div class="card border-0 bg-light">
+                                <div class="card-body p-3">
+                                    <h6 class="card-title">${data.assigned_user.username}</h6>
+                                    <p class="card-text text-muted mb-1">
+                                        <i class="fas fa-envelope me-1"></i>${data.assigned_user.email}
+                                    </p>
+                                    <p class="card-text text-muted mb-0">
+                                        <i class="fas fa-building me-1"></i>${data.assigned_user.area}
+                                    </p>
+                                </div>
+                            </div>
+                        ` : '<p class="text-muted">No asignado</p>'}
+                        
+                        <h6 class="text-primary mb-3 mt-4">
+                            <i class="fas fa-chart-pie me-2"></i>Progreso
+                        </h6>
+                        <div class="progress mb-2" style="height: 20px;">
+                            <div class="progress-bar ${data.completion_percentage === 100 ? 'bg-success' : 'bg-primary'}" 
+                                 role="progressbar" style="width: ${data.completion_percentage}%">
+                                ${data.completion_percentage}%
+                            </div>
+                        </div>
+                        <p class="text-center text-muted">
+                            ${data.files_uploaded} de ${data.total_files_required} archivos subidos
+                        </p>
+                    </div>
+                </div>
+                
+                ${data.files.length > 0 ? `
+                    <div class="mt-4">
+                        <h6 class="text-primary mb-3">
+                            <i class="fas fa-files me-2"></i>Archivos Subidos (${data.files.length})
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Archivo</th>
+                                        <th>Tamaño</th>
+                                        <th>Subido por</th>
+                                        <th>Fecha</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.files.map(file => `
+                                        <tr>
+                                            <td>
+                                                <i class="fas fa-file me-2"></i>
+                                                ${file.filename}
+                                            </td>
+                                            <td>${formatFileSize(file.file_size)}</td>
+                                            <td>${file.uploaded_by}</td>
+                                            <td>${file.upload_date}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                ` : ''}
+                
+                ${data.notifications.length > 0 ? `
+                    <div class="mt-4">
+                        <h6 class="text-primary mb-3">
+                            <i class="fas fa-bell me-2"></i>Notificaciones Recientes
+                        </h6>
+                        <div class="list-group">
+                            ${data.notifications.map(notif => `
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <p class="mb-1">${notif.message}</p>
+                                        <small class="text-muted">${notif.created_at}</small>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+            
+            document.getElementById('taskDetailsContent').innerHTML = taskDetailsHTML;
+        })
+        .catch(error => {
+            document.getElementById('taskDetailsContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Error al cargar los detalles de la tarea: ${error.message}
+                </div>
+            `;
+        });
+}
+</script>
+
+<!-- Modal para detalles de tarea -->
+<div class="modal fade" id="taskDetailsModal" tabindex="-1" aria-labelledby="taskDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="taskDetailsModalLabel">
+                    <i class="fas fa-tasks me-2"></i>Detalles de la Tarea
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="taskDetailsContent">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="mt-2">Cargando detalles de la tarea...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

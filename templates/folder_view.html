@@ -1,0 +1,434 @@
+{% extends "base.html" %}
+
+{% block title %}Carpeta - {{ area }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header de la Carpeta -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-0">
+                        <i class="fas fa-folder text-primary me-2"></i>
+                        Carpeta: {{ area }}
+                    </h2>
+                    <p class="text-muted mb-0">Gestiona documentos y tareas de esta área</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Volver al Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas de la Carpeta -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ documents|length }}</h4>
+                            <small>Documentos</small>
+                        </div>
+                        <i class="fas fa-file-alt fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ tasks|selectattr('status', 'equalto', 'completed')|list|length }}</h4>
+                            <small>Tareas Completadas</small>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ tasks|selectattr('status', 'equalto', 'pending')|list|length }}</h4>
+                            <small>Tareas Pendientes</small>
+                        </div>
+                        <i class="fas fa-clock fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ users|length }}</h4>
+                            <small>Usuarios del Área</small>
+                        </div>
+                        <i class="fas fa-users fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pestañas -->
+    <ul class="nav nav-tabs" id="folderTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents" type="button" role="tab">
+                <i class="fas fa-file-alt me-1"></i>Documentos
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button" role="tab">
+                <i class="fas fa-tasks me-1"></i>Tareas
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">
+                <i class="fas fa-users me-1"></i>Usuarios
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="folderTabsContent">
+        <!-- Pestaña de Documentos -->
+        <div class="tab-pane fade show active" id="documents" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Documentos de {{ area }}</h5>
+                    <small class="text-muted">Los documentos se crean automáticamente al asignar tareas</small>
+                </div>
+                <div class="card-body">
+                    {% if documents %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Título</th>
+                                        <th>Archivo</th>
+                                        <th>Versión</th>
+                                        <th>Subido por</th>
+                                        <th>Fecha de Subida</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for document in documents %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ document.title }}</strong>
+                                            {% if document.description %}
+                                                <br><small class="text-muted">{{ document.description }}</small>
+                                            {% endif %}
+                                            {% if document.tasks %}
+                                                {% set task = document.tasks[0] %}
+                                                {% if task.total_files_required > 1 %}
+                                                    <br><small class="text-info">
+                                                        <i class="fas fa-chart-line me-1"></i>
+                                                        Progreso: {{ task.files_uploaded }}/{{ task.total_files_required }} archivos
+                                                        {% if task.files_uploaded > 0 %}
+                                                            ({{ "%.1f"|format(task.files_uploaded / task.total_files_required * 100) }}%)
+                                                        {% endif %}
+                                                    </small>
+                                                {% endif %}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if document.files %}
+                                                <i class="fas fa-files text-primary me-1"></i>
+                                                {{ document.files|length }} archivo(s)
+                                                <br><small class="text-success">
+                                                    {% for file in document.files[:2] %}
+                                                        <i class="fas fa-file me-1"></i>{{ file.original_filename }}
+                                                        {% if not loop.last %}<br>{% endif %}
+                                                    {% endfor %}
+                                                    {% if document.files|length > 2 %}
+                                                        <br><small class="text-muted">...y {{ document.files|length - 2 }} más</small>
+                                                    {% endif %}
+                                                </small>
+                                            {% elif document.filename %}
+                                                <i class="fas fa-file-pdf text-danger me-1"></i>
+                                                {{ document.filename }}
+                                            {% else %}
+                                                <span class="text-muted">
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>Sin archivos
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">v{{ document.version }}</span>
+                                        </td>
+                                        <td>
+                                            {% if document.uploader %}
+                                                {{ document.uploader.username }}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {{ document.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                        </td>
+                                        <td>
+                                            {% if document.status == 'completed' %}
+                                                <span class="badge bg-success">Completado</span>
+                                            {% elif document.status == 'pending' %}
+                                                <span class="badge bg-warning">Pendiente</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Vencido</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('download_document', document_id=document.id) }}" class="btn btn-sm btn-outline-info" title="Ver Archivos">
+                                                    <i class="fas fa-folder-open"></i>
+                                                </a>
+                                                {% if document.files and document.files|length > 0 %}
+                                                <a href="{{ url_for('download_task_files', task_id=document.tasks[0].id if document.tasks else 0) }}" class="btn btn-sm btn-outline-success" title="Descargar Todos los Archivos">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                                {% endif %}
+                                                <a href="{{ url_for('request_correction', document_id=document.id) }}" class="btn btn-sm btn-outline-warning" title="Solicitar Corrección">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                {% if document.tasks %}
+                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteTask({{ document.tasks[0].id }})" title="Eliminar Tarea">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No hay documentos en esta carpeta</h5>
+                            <p class="text-muted">Asigna una tarea para que aparezcan los documentos automáticamente</p>
+                            <a href="{{ url_for('assign_task', area=area) }}" class="btn btn-primary mt-3">
+                                <i class="fas fa-tasks me-1"></i>Asignar Primera Tarea
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestaña de Tareas -->
+        <div class="tab-pane fade" id="tasks" role="tabpanel">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Tareas de {{ area }}</h5>
+                            <a href="{{ url_for('assign_task', area=area) }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus me-1"></i>Asignar Tarea
+                            </a>
+                </div>
+                <div class="card-body">
+                    {% if tasks %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Documento</th>
+                                        <th>Asignado a</th>
+                                        <th>Estado</th>
+                                        <th>Fecha Límite</th>
+                                        <th>Notas</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for task in tasks %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ task.document.title }}</strong>
+                                        </td>
+                                        <td>{{ task.assigned_user.username }}</td>
+                                        <td>
+                                            {% if task.status == 'completed' %}
+                                                <span class="badge bg-success">Completado</span>
+                                            {% elif task.status == 'in_progress' %}
+                                                <span class="badge bg-info">En Progreso</span>
+                                            {% elif is_task_overdue(task.due_date, task.status) %}
+                                                <span class="badge bg-danger">Vencido</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">Pendiente</span>
+                                            {% endif %}
+                                            {% if task.total_files_required > 1 %}
+                                                <br><small class="text-muted">{{ task.files_uploaded }}/{{ task.total_files_required }} archivos</small>
+                                                {% if task.files_uploaded > 0 %}
+                                                    <br><small class="text-success">
+                                                        <i class="fas fa-file me-1"></i>{{ task.files_uploaded }} archivo(s) subido(s)
+                                                    </small>
+                                                {% else %}
+                                                    <br><small class="text-warning">
+                                                        <i class="fas fa-exclamation-triangle me-1"></i>Sin archivos
+                                                    </small>
+                                                {% endif %}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if task.due_date %}
+                                                {{ task.due_date.strftime('%d/%m/%Y') }}
+                                                {% if is_task_overdue(task.due_date, task.status) %}
+                                                    <br><small class="text-danger">Vencido</small>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">Sin fecha límite</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if task.notes %}
+                                                <small>{{ task.notes[:50] }}{% if task.notes|length > 50 %}...{% endif %}</small>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('download_document', document_id=task.document.id) }}" class="btn btn-sm btn-outline-info" title="Ver Archivos">
+                                                    <i class="fas fa-folder-open"></i>
+                                                </a>
+                                                {% if task.files_uploaded > 0 %}
+                                                <a href="{{ url_for('download_task_files', task_id=task.id) }}" class="btn btn-sm btn-outline-success" title="Descargar Todos los Archivos">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                                {% endif %}
+                                                <a href="{{ url_for('request_correction', document_id=task.document.id) }}" class="btn btn-sm btn-outline-warning" title="Solicitar Corrección">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteTask({{ task.id }})" title="Eliminar Tarea">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No hay tareas en esta carpeta</h5>
+                            <p class="text-muted">Asigna la primera tarea para comenzar</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestaña de Usuarios -->
+        <div class="tab-pane fade" id="users" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Usuarios de {{ area }}</h5>
+                </div>
+                <div class="card-body">
+                    {% if users %}
+                        <div class="row">
+                            {% for user in users %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+                                                <i class="fas fa-user"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0">{{ user.username }}</h6>
+                                                <small class="text-muted">{{ user.email }}</small>
+                                                {% if user.last_login %}
+                                                    <br><small class="text-info">Último acceso: {{ user.last_login.strftime('%d/%m/%Y %H:%M') }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer">
+                                        <span class="badge bg-{% if user.is_active %}success{% else %}secondary{% endif %}">
+                                            {% if user.is_active %}Activo{% else %}Inactivo{% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No hay usuarios en esta área</h5>
+                            <p class="text-muted">Crea usuarios para esta área desde la gestión de usuarios</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-sm {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #6c757d;
+}
+
+.nav-tabs .nav-link.active {
+    border-bottom-color: #0d6efd;
+    color: #0d6efd;
+    background: none;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+</style>
+
+<script>
+function deleteTask(taskId) {
+    if (confirm('¿Estás seguro de que quieres eliminar esta tarea? Esta acción no se puede deshacer.')) {
+        // Crear formulario temporal para enviar DELETE request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/delete-task/${taskId}`;
+        
+        // Agregar token CSRF si es necesario
+        const csrfToken = document.querySelector('meta[name=csrf-token]');
+        if (csrfToken) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'csrf_token';
+            input.value = csrfToken.getAttribute('content');
+            form.appendChild(input);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

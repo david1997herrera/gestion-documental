@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Solicitar Corrección{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>Solicitar Corrección de Documento
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Información del Documento -->
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-file-alt me-2"></i>{{ document.title }}</h5>
+                        {% if document.description %}
+                            <p class="mb-1"><strong>Descripción:</strong> {{ document.description }}</p>
+                        {% endif %}
+                        {% if document.filename %}
+                            <p class="mb-1"><strong>Archivo actual:</strong> {{ document.filename }}</p>
+                        {% endif %}
+                        <p class="mb-0"><strong>Versión:</strong> {{ document.version }}</p>
+                    </div>
+
+                    <!-- Formulario de Corrección -->
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="correction_notes" class="form-label">
+                                <i class="fas fa-comment-dots me-1"></i>Detalles de la corrección solicitada
+                            </label>
+                            <textarea 
+                                class="form-control" 
+                                id="correction_notes" 
+                                name="correction_notes" 
+                                rows="5" 
+                                placeholder="Describe qué correcciones necesitas que se realicen en este documento..."
+                                required></textarea>
+                            <div class="form-text">
+                                Sé específico sobre los cambios que necesitas. El usuario recibirá una notificación con estos detalles.
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('view_folder', area=document.category.area) }}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-arrow-left me-1"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-paper-plane me-1"></i>Enviar Solicitud
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Historial de Versiones (si existe) -->
+            {% if document.parent_document_id %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Historial de Versiones
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Este documento es una versión actualizada. Revisa el historial para ver las versiones anteriores.
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.alert-info {
+    background-color: #e7f3ff;
+    border-color: #b8daff;
+    color: #004085;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #000;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800;
+    border-color: #d39e00;
+}
+</style>
+{% endblock %}
+

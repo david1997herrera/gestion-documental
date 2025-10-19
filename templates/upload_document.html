@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+
+{% block title %}Subir Documento - Gestión Documental{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="upload-card" data-aos="fade-up">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-upload me-2"></i>Subir Documento
+                    </h4>
+                    <p class="text-muted mb-0">Completa tu tarea asignada subiendo el documento requerido</p>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Task Info -->
+                    <div class="task-info mb-4">
+                        <div class="task-header">
+                            <h5 class="task-title">{{ task.document.title }}</h5>
+                            <span class="badge bg-primary">{{ task.document.category.name }}</span>
+                        </div>
+                        <p class="task-description">{{ task.document.description }}</p>
+                        
+                        <div class="task-meta">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="meta-item">
+                                        <i class="fas fa-user me-2"></i>
+                                        <strong>Asignado a:</strong> {{ task.assigned_user.username }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    {% if task.due_date %}
+                                    <div class="meta-item">
+                                        <i class="fas fa-calendar-alt me-2"></i>
+                                        <strong>Fecha límite:</strong> 
+                                        <span class="{% if is_task_overdue(task.due_date, task.status) %}text-danger{% endif %}">
+                                            {{ task.due_date.strftime('%d/%m/%Y') }}
+                                        </span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            {% if task.notes %}
+                            <div class="task-notes mt-3">
+                                <div class="notes-header">
+                                    <i class="fas fa-sticky-note me-2"></i>
+                                    <strong>Notas adicionales:</strong>
+                                </div>
+                                <div class="notes-content">
+                                    {{ task.notes }}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Upload Form -->
+                    <form method="POST" enctype="multipart/form-data">
+                        <!-- Información de progreso -->
+                        <div class="alert alert-info mb-4">
+                            <h6><i class="fas fa-info-circle me-2"></i>Progreso de la Tarea</h6>
+                            <div class="progress mb-2">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ (task.files_uploaded / task.total_files_required * 100) }}%"
+                                     aria-valuenow="{{ task.files_uploaded }}" 
+                                     aria-valuemin="0" aria-valuemax="{{ task.total_files_required }}">
+                                    {{ task.files_uploaded }}/{{ task.total_files_required }}
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                Archivos subidos: {{ task.files_uploaded }} de {{ task.total_files_required }} requeridos
+                                {% if task.files_uploaded > 0 %}
+                                    ({{ "%.1f"|format(task.files_uploaded / task.total_files_required * 100) }}% completado)
+                                {% endif %}
+                            </small>
+                        </div>
+                        
+                        <div class="upload-area">
+                            <div class="upload-zone" id="uploadZone">
+                                <div class="upload-icon">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                </div>
+                                <h5>Arrastra tus archivos aquí o haz clic para seleccionar</h5>
+                                <p class="text-muted">Formatos permitidos: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG</p>
+                                <input type="file" class="form-control d-none" id="files" name="files" multiple required>
+                                <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('files').click()">
+                                    <i class="fas fa-folder-open me-2"></i>Seleccionar Archivos
+                                </button>
+                            </div>
+                            
+                            <div class="file-preview d-none" id="filePreview">
+                                <div class="preview-content">
+                                    <div class="file-icon">
+                                        <i class="fas fa-files"></i>
+                                    </div>
+                                    <div class="file-info">
+                                        <div class="file-name" id="fileCount"></div>
+                                        <div class="file-size" id="fileSize"></div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFiles()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mb-4">
+                            <label for="comments" class="form-label">
+                                <i class="fas fa-comment me-2"></i>Comentarios (Opcional)
+                            </label>
+                            <textarea class="form-control" id="comments" name="comments" rows="3" 
+                                      placeholder="Agrega comentarios sobre el documento..."></textarea>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('user_dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                                <i class="fas fa-upload me-2"></i>Subir Documento
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.upload-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border: none;
+}
+
+.card-header h4 {
+    font-weight: 700;
+}
+
+.card-body {
+    padding: 2rem;
+}
+
+.task-info {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    border-left: 4px solid #667eea;
+}
+
+.task-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.task-title {
+    color: #333;
+    font-weight: 600;
+    margin-bottom: 0;
+    flex: 1;
+}
+
+.task-description {
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+.task-meta {
+    margin-top: 1rem;
+}
+
+.meta-item {
+    margin-bottom: 0.5rem;
+    color: #555;
+}
+
+.task-notes {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid #e9ecef;
+}
+
+.notes-header {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.notes-content {
+    color: #666;
+    font-style: italic;
+}
+
+.upload-area {
+    margin-bottom: 2rem;
+}
+
+.upload-zone {
+    border: 2px dashed #dee2e6;
+    border-radius: 15px;
+    padding: 3rem 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.upload-zone:hover,
+.upload-zone.dragover {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.upload-icon {
+    font-size: 3rem;
+    color: #667eea;
+    margin-bottom: 1rem;
+}
+
+.upload-zone h5 {
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.file-preview {
+    border: 2px solid #28a745;
+    border-radius: 15px;
+    padding: 1.5rem;
+    background: rgba(40, 167, 69, 0.05);
+}
+
+.preview-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.file-icon {
+    font-size: 2rem;
+    color: #28a745;
+}
+
+.file-info {
+    flex: 1;
+}
+
+.file-name {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.25rem;
+}
+
+.file-size {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.form-control, .form-select {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.btn {
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    border: none;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+}
+</style>
+
+<script>
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('files');
+const filePreview = document.getElementById('filePreview');
+const submitBtn = document.getElementById('submitBtn');
+
+// Drag and drop functionality
+uploadZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadZone.classList.add('dragover');
+});
+
+uploadZone.addEventListener('dragleave', () => {
+    uploadZone.classList.remove('dragover');
+});
+
+uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        handleFiles(files);
+    }
+});
+
+uploadZone.addEventListener('click', () => {
+    fileInput.click();
+});
+
+fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+        handleFiles(e.target.files);
+    }
+});
+
+function handleFiles(files) {
+    // Check file types
+    const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'image/jpeg',
+        'image/png'
+    ];
+    
+    let validFiles = [];
+    let totalSize = 0;
+    
+    for (let file of files) {
+        if (allowedTypes.includes(file.type)) {
+            validFiles.push(file);
+            totalSize += file.size;
+        }
+    }
+    
+    if (validFiles.length === 0) {
+        alert('Ningún archivo tiene un tipo permitido. Formatos permitidos: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG');
+        return;
+    }
+    
+    if (validFiles.length !== files.length) {
+        alert(`${files.length - validFiles.length} archivo(s) fueron ignorados por tener formato no permitido.`);
+    }
+    
+    // Update preview
+    document.getElementById('fileCount').textContent = `${validFiles.length} archivo(s) seleccionado(s)`;
+    document.getElementById('fileSize').textContent = formatFileSize(totalSize);
+    
+    uploadZone.classList.add('d-none');
+    filePreview.classList.remove('d-none');
+    submitBtn.disabled = false;
+}
+
+function removeFiles() {
+    fileInput.value = '';
+    uploadZone.classList.remove('d-none');
+    filePreview.classList.add('d-none');
+    submitBtn.disabled = true;
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+</script>
+{% endblock %}

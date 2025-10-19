@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  # Aplicación Flask con SQLite
+  web:
+    build: .
+    container_name: gestion-documental-web
+    ports:
+      - "8080:8080"
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=sqlite:///app/gestion_documental.db
+      - SECRET_KEY=gestion_documental_secret_key_2024_very_secure_change_in_production
+      - MAIL_SERVER=smtp.gmail.com
+      - MAIL_PORT=587
+      - MAIL_USE_TLS=true
+      - EMAIL_SENDER=estadisticatessa@gmail.com
+      - EMAIL_PASSWORD=rxcd epqr gebp myhj
+      - UPLOAD_FOLDER=static/uploads
+      - MAX_FILE_SIZE=16777216
+    volumes:
+      - ./static/uploads:/app/static/uploads
+      - ./instance:/app/instance
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+

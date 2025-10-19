@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Documento - Gestión Documental{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="create-card" data-aos="fade-up">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-plus me-2"></i>Crear Nuevo Documento
+                    </h4>
+                    <p class="text-muted mb-0">Define un nuevo documento que puede ser asignado como tarea</p>
+                </div>
+                
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">
+                                <i class="fas fa-heading me-2"></i>Título del Documento
+                            </label>
+                            <input type="text" class="form-control" id="title" name="title" required
+                                   placeholder="Ej: Certificado Médico Anual">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">
+                                <i class="fas fa-align-left me-2"></i>Descripción
+                            </label>
+                            <textarea class="form-control" id="description" name="description" rows="4" required
+                                      placeholder="Describe qué tipo de documento es y qué información debe contener..."></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="category_id" class="form-label">
+                                <i class="fas fa-folder me-2"></i>Categoría
+                            </label>
+                            <select class="form-select" id="category_id" name="category_id" required>
+                                <option value="">Seleccionar categoría...</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}">
+                                    {{ category.name }} - {{ category.area }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="priority" class="form-label">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Prioridad por Defecto
+                                </label>
+                                <select class="form-select" id="priority" name="priority">
+                                    <option value="normal">Normal</option>
+                                    <option value="high">Alta</option>
+                                    <option value="urgent">Urgente</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="due_days" class="form-label">
+                                    <i class="fas fa-calendar-alt me-2"></i>Días para completar (por defecto)
+                                </label>
+                                <input type="number" class="form-control" id="due_days" name="due_days" 
+                                       value="7" min="1" max="365" placeholder="7">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="instructions" class="form-label">
+                                <i class="fas fa-list-ol me-2"></i>Instrucciones para el Usuario
+                            </label>
+                            <textarea class="form-control" id="instructions" name="instructions" rows="4"
+                                      placeholder="Proporciona instrucciones específicas sobre cómo completar esta tarea..."></textarea>
+                        </div>
+                        
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="is_template" name="is_template">
+                            <label class="form-check-label" for="is_template">
+                                <i class="fas fa-copy me-2"></i>Usar como plantilla para futuros documentos similares
+                            </label>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Crear Documento
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.create-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 2rem;
+    border: none;
+}
+
+.card-header h4 {
+    font-weight: 700;
+}
+
+.card-body {
+    padding: 2rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.form-control, .form-select {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.form-check-input:checked {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.btn {
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    border: none;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+}
+
+/* Character counter for textareas */
+.char-counter {
+    font-size: 0.8rem;
+    color: #666;
+    text-align: right;
+    margin-top: 0.25rem;
+}
+</style>
+
+<script>
+// Character counter for textareas
+document.addEventListener('DOMContentLoaded', function() {
+    const textareas = document.querySelectorAll('textarea');
+    
+    textareas.forEach(textarea => {
+        const maxLength = textarea.getAttribute('maxlength');
+        if (maxLength) {
+            const counter = document.createElement('div');
+            counter.className = 'char-counter';
+            counter.textContent = `0 / ${maxLength} caracteres`;
+            textarea.parentNode.appendChild(counter);
+            
+            textarea.addEventListener('input', function() {
+                const remaining = maxLength - this.value.length;
+                counter.textContent = `${this.value.length} / ${maxLength} caracteres`;
+                
+                if (remaining < 50) {
+                    counter.style.color = '#dc3545';
+                } else if (remaining < 100) {
+                    counter.style.color = '#ffc107';
+                } else {
+                    counter.style.color = '#666';
+                }
+            });
+        }
+    });
+    
+    // Auto-resize textareas
+    textareas.forEach(textarea => {
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+    });
+});
+</script>
+{% endblock %}
+

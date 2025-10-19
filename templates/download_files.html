@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Descargar Archivos - Gestión Documental{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card" data-aos="fade-up">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-download me-2"></i>Archivos del Documento
+                    </h4>
+                    <p class="text-muted mb-0">{{ document.title }}</p>
+                </div>
+                
+                <div class="card-body">
+                    {% if document.files %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th><i class="fas fa-file me-2"></i>Nombre del Archivo</th>
+                                        <th><i class="fas fa-weight-hanging me-2"></i>Tamaño</th>
+                                        <th><i class="fas fa-calendar me-2"></i>Subido</th>
+                                        <th><i class="fas fa-user me-2"></i>Subido por</th>
+                                        <th><i class="fas fa-cog me-2"></i>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for file in document.files %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-file-{{ file.file_type.split('/')[0] if file.file_type else 'alt' }} me-2 text-primary"></i>
+                                                <div>
+                                                    <strong>{{ file.original_filename }}</strong>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if file.file_size %}
+                                                {% set size_mb = file.file_size / 1024 / 1024 %}
+                                                {% if size_mb < 1 %}
+                                                    {{ "%.1f"|format(file.file_size / 1024) }} KB
+                                                {% else %}
+                                                    {{ "%.1f"|format(size_mb) }} MB
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ file.uploaded_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                                        <td>{{ file.uploader.username }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('download_single_file', file_id=file.id) }}" 
+                                                   class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-download me-1"></i>Descargar
+                                                </a>
+                                                {% if current_user.id == file.uploaded_by or current_user.role == 'gerente' %}
+                                                <a href="{{ url_for('delete_file', file_id=file.id) }}" 
+                                                   class="btn btn-sm btn-danger"
+                                                   onclick="return confirm('¿Estás seguro de que quieres eliminar este archivo?')">
+                                                    <i class="fas fa-trash me-1"></i>Eliminar
+                                                </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-info-circle me-2"></i>Información del Documento</h6>
+                                <p class="mb-0">
+                                    <strong>Total de archivos:</strong> {{ document.files|length }}<br>
+                                    <strong>Descripción:</strong> {{ document.description or 'Sin descripción' }}<br>
+                                    <strong>Área:</strong> {{ document.category.area }}<br>
+                                    <strong>Última actualización:</strong> {{ document.updated_at.strftime('%d/%m/%Y %H:%M') }}
+                                </p>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No hay archivos disponibles</h5>
+                            <p class="text-muted">Este documento no tiene archivos asociados.</p>
+                            {% if current_user.role != 'gerente' %}
+                            <a href="{{ url_for('upload_document', task_id=document.tasks[0].id if document.tasks else 0) }}" class="btn btn-primary mt-3">
+                                <i class="fas fa-upload me-1"></i>Subir Archivos
+                            </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mt-4 text-center">
+                        <a href="javascript:history.back()" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Volver
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.alert-info {
+    background-color: #e3f2fd;
+    border-color: #bbdefb;
+    color: #0d47a1;
+}
+</style>
+{% endblock %}

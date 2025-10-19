@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Nueva Área{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-folder-plus me-2"></i>Crear Nueva Área
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="area_name" class="form-label">
+                                <i class="fas fa-tag me-1"></i>Nombre del Área
+                            </label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                id="area_name" 
+                                name="area_name" 
+                                placeholder="Ej: Mantenimiento, Recursos Humanos, etc."
+                                required
+                            >
+                            <div class="form-text">
+                                Este será el nombre de la carpeta que aparecerá en el dashboard
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="area_description" class="form-label">
+                                <i class="fas fa-align-left me-1"></i>Descripción del Área
+                            </label>
+                            <textarea 
+                                class="form-control" 
+                                id="area_description" 
+                                name="area_description" 
+                                rows="3"
+                                placeholder="Describe brevemente qué tipo de documentos manejará esta área..."
+                            ></textarea>
+                            <div class="form-text">
+                                Opcional: Describe el propósito de esta área
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Nota:</strong> Una vez creada el área, podrás:
+                            <ul class="mb-0 mt-2">
+                                <li><strong>Crear usuarios</strong> y asignarlos a esta área desde "Gestionar Usuarios"</li>
+                                <li><strong>Asignar tareas</strong> específicas para esta área</li>
+                                <li><strong>Ver todos los documentos</strong> de esta área en su carpeta</li>
+                                <li><strong>Los usuarios recibirán un email</strong> con sus credenciales automáticamente</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-arrow-left me-1"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-folder-plus me-1"></i>Crear Área
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Información sobre Áreas Existentes -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Áreas Creadas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if existing_areas %}
+                        <div class="row">
+                            {% for area in existing_areas %}
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex align-items-center p-2 bg-light rounded">
+                                    <i class="fas fa-folder text-primary me-3"></i>
+                                    <div>
+                                        <h6 class="mb-0">{{ area }}</h6>
+                                        <small class="text-muted">Área creada</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No hay áreas creadas aún</p>
+                            <p class="text-muted small">Crea tu primera área para comenzar</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border-radius: 15px;
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    border-radius: 15px 15px 0 0 !important;
+}
+
+.form-control {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.alert-info {
+    background-color: #e7f3ff;
+    border-color: #b8daff;
+    color: #004085;
+    border-radius: 10px;
+}
+</style>
+{% endblock %}
