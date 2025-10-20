@@ -107,6 +107,7 @@ class DocumentTask(db.Model):
     notes = db.Column(db.Text)
     total_files_required = db.Column(db.Integer, default=1)  # Número total de archivos requeridos
     files_uploaded = db.Column(db.Integer, default=0)  # Número de archivos subidos
+    correction_notes = db.Column(db.Text)  # Notas de corrección solicitada
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     completed_at = db.Column(db.DateTime)
     
@@ -139,6 +140,20 @@ class Notification(db.Model):
     
     # Relaciones
     user = db.relationship('User', backref='notifications')
+
+class TaskHistory(db.Model):
+    """Registro de historial de cambios en tareas"""
+    id = db.Column(db.Integer, primary_key=True)
+    task_id = db.Column(db.Integer, db.ForeignKey('document_task.id'), nullable=False)
+    action = db.Column(db.String(50), nullable=False)  # 'file_uploaded', 'file_deleted', 'status_changed'
+    description = db.Column(db.Text, nullable=False)
+    filename = db.Column(db.String(255))  # Para acciones de archivos
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relaciones
+    task = db.relationship('DocumentTask', backref='history_records')
+    user = db.relationship('User', backref='history_actions')
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -686,6 +701,16 @@ def upload_document(task_id):
                 
                 db.session.add(document_file)
                 uploaded_count += 1
+                
+                # Registrar en historial
+                history_record = TaskHistory(
+                    task_id=task.id,
+                    action='file_uploaded',
+                    description=f'Archivo subido: {file.filename}',
+                    filename=file.filename,
+                    user_id=current_user.id
+                )
+                db.session.add(history_record)
         
         if uploaded_count == 0:
             flash('No se pudo subir ningún archivo válido', 'error')
@@ -709,6 +734,10 @@ def upload_document(task_id):
         
         # Enviar notificación de progreso al gerente
         send_progress_notification(task, task.files_uploaded)
+        
+        # Si es una corrección completada, enviar notificación específica
+        if task.status == 'completed' and task.correction_notes:
+            send_correction_completed_email(task, task.correction_notes)
         
         if task.status == 'completed':
             flash(f'¡Tarea completada! Se subieron {uploaded_count} archivos. Total: {task.files_uploaded}/{task.total_files_required}', 'success')
@@ -1023,6 +1052,9 @@ def request_correction(document_id):
             )
             db.session.add(current_task)
         
+        # Guardar notas de corrección en la tarea
+        current_task.correction_notes = correction_notes
+        
         # Crear notificación
         notification = Notification(
             user_id=current_task.assigned_to,
@@ -1077,6 +1109,69 @@ def send_correction_email(task, correction_notes):
     except Exception as e:
         print(f"Error enviando email de corrección: {e}")
         return False
+
+def send_correction_completed_email(task, correction_notes):
+    """Notifica al gerente cuando se completa una corrección"""
+    try:
+        gerente = User.query.get(task.assigned_by)
+        assigned_user = User.query.get(task.assigned_to)
+        
+        msg = Message(
+            subject=f'✅ Corrección Completada: {task.document.title}',
+            sender=app.config['MAIL_USERNAME'],
+            recipients=[gerente.email]
+        )
+        
+        msg.body = f"""
+        Hola {gerente.username},
+        
+        {assigned_user.username} ha completado la corrección solicitada.
+        
+        Documento: {task.document.title}
+        Área: {task.document.category.area}
+        
+        Corrección realizada según las notas:
+        {correction_notes}
+        
+        Puedes revisar los archivos actualizados en el sistema.
+        
+        Saludos,
+        Sistema de Gestión Documental
+        """
+        
+        mail.send(msg)
+        print(f"Email de corrección completada enviado a {gerente.email}")
+        return True
+    except Exception as e:
+        print(f"Error enviando email de corrección completada: {e}")
+        return False
+
+@app.route('/admin/send-reminder/<int:task_id>')
+@login_required
+def send_manual_reminder(task_id):
+    """Envía recordatorio manual a un usuario específico"""
+    if current_user.role != 'gerente':
+        flash('No tienes permisos para esta acción', 'error')
+        return redirect(url_for('user_dashboard'))
+    
+    task = DocumentTask.query.get_or_404(task_id)
+    user = User.query.get(task.assigned_to)
+    
+    # Enviar recordatorio
+    send_reminder_email(user, task)
+    
+    # Crear notificación
+    notification = Notification(
+        user_id=task.assigned_to,
+        type='reminder',
+        title='Recordatorio Enviado',
+        message=f'Se ha enviado un recordatorio sobre la tarea: {task.document.title}'
+    )
+    db.session.add(notification)
+    db.session.commit()
+    
+    flash(f'Recordatorio enviado a {user.username}', 'success')
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/create-area', methods=['GET', 'POST'])
 @login_required
